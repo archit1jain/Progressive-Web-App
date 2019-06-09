@@ -11,7 +11,7 @@ const Template = ({ title }) => (
   <div>
     <NavBar />
     <p className="page-info">
-      This is the {title} page.
+      This is the {title} page for ARchit Jain.
     </p>
   </div>
 );
