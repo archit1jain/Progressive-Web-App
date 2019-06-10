@@ -11,6 +11,7 @@
      <!-- Tell iOS it's a PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>React App</title>
+
     <style type="text/css">
       body {
         margin: 0;
@@ -32,17 +33,25 @@
         font-weight: bold;
       }
     </style>
+    <link rel="stylesheet" type="text/css" href="/styles/inline.css">
   </head>
   <body>
-    <noscript>
-      You need to enable JavaScript to run this app.
-    </noscript>
-    <div id="root">
 
-      <p class="page-info">
+    <div id="root">
+        <header class="header">
+    <h1>
+      Base App
+    </h1>
+    <button id="butInstall" aria-label="Install" hidden></button>
+    <button id="butRefresh" aria-label="Refresh"></button>
+    </header>
+      <p class="page-info" style="position: relative; top: 100px;">
         This is a base app.
       </p>
     </div>
+    <script src="/scripts/luxon-1.11.4.js"></script>
+    <script src="/scripts/app.js"></script>
+    <script src="/scripts/install.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {

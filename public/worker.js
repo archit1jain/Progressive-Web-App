@@ -1,50 +1,65 @@
 // Flag for enabling cache in production
-var doCache = false;
-var CACHE_NAME = 'pwa-app-cache';
-// Delete old caches
-self.addEventListener('activate', event => {
-  const currentCachelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys()
-      .then(keyList =>
-        Promise.all(keyList.map(key => {
-          if (!currentCachelist.includes(key)) {
-            return caches.delete(key);
-          }
-        }))
-      )
+var doCache = true;
+const CACHE_NAME = 'static-cache-v2';
+const DATA_CACHE_NAME = 'data-cache-v1';
+
+const FILES_TO_CACHE = ['./offline.html'];
+
+
+self.addEventListener('install', (evt) => {
+  console.log('[ServiceWorker] Install');
+  evt.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[ServiceWorker] Pre-caching offline page');
+      return cache.addAll(FILES_TO_CACHE);
+    })
   );
+  self.skipWaiting();
 });
-// This triggers when user starts the app
-self.addEventListener('install', function(event) {
-  if (doCache) {
-    event.waitUntil(
-      caches.open(CACHE_NAME)
-        .then(function(cache) {
-          fetch('asset-manifest.json')
-            .then(response => {
-              response.json();
-            })
-            .then(assets => {
-              // We will cache initial page and the main.js
-              // We could also cache assets like CSS and images
-              const urlsToCache = [
-                '/',
-                assets['main.js']
-              ];
-              cache.addAll(urlsToCache);
-            })
-        })
-    );
-  }
+
+self.addEventListener('activate', (evt) => {
+  console.log('[ServiceWorker] Activate');
+  // CODELAB: Remove previous cached data from disk.
+  evt.waitUntil(
+    caches.keys().then((keyList) => {
+      return Promise.all(keyList.map((key) => {
+        if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+          console.log('[ServiceWorker] Removing old cache', key);
+          return caches.delete(key);
+        }
+      }));
+    })
+);
+  self.clients.claim();
 });
-// Here we intercept request and serve up the matching files
-self.addEventListener('fetch', function(event) {
-  if (doCache) {
-    event.respondWith(
-      caches.match(event.request).then(function(response) {
-        return response || fetch(event.request);
-      })
-    );
-  }
+
+self.addEventListener('fetch', (evt) => {
+  console.log('[ServiceWorker] Fetch', evt.request.url);
+  // CODELAB: Add fetch event handler here.
+  if (evt.request.url.includes('/forecast/')) {
+  console.log('[Service Worker] Fetch (data)', evt.request.url);
+  evt.respondWith(
+      caches.open(DATA_CACHE_NAME).then((cache) => {
+        return fetch(evt.request)
+            .then((response) => {
+              // If the response was good, clone it and store it in the cache.
+              if (response.status === 200) {
+                cache.put(evt.request.url, response.clone());
+              }
+              return response;
+            }).catch((err) => {
+              // Network request failed, try to get it from the cache.
+              return cache.match(evt.request);
+            });
+      }));
+  return;
+}
+evt.respondWith(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(evt.request)
+          .then((response) => {
+            return response || fetch(evt.request);
+          });
+    })
+);
 });
